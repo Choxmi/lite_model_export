@@ -28,6 +28,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         out = (TextView)findViewById(R.id.output);
         btn = (Button)findViewById(R.id.predict);
+
+        try {
+            tflite = new Interpreter(loadModelFile(),null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -35,15 +42,10 @@ public class MainActivity extends AppCompatActivity {
                 out.setText(Float.toString(prediction));
             }
         });
-        try {
-            tflite = new Interpreter(loadModelFile(),null);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     private float getOutput(){
-        float[] inputVal = {};
+        float[] inputVal = {40.72f,390,-0.29885602f,0.47655082f,-1.8878422f,-0.29885602f,0.47655082f,-1.8878422f};
         float[] outputVal = new float[1];
         tflite.run(inputVal,outputVal);
 
@@ -53,12 +55,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private MappedByteBuffer loadModelFile() throws IOException {
-        AssetFileDescriptor fileDescriptor = this.getAssets().openFd("linear.tflite");
+        listAssetFiles("");
+        AssetFileDescriptor fileDescriptor = getApplicationContext().getAssets().openFd("linear.tflite");
         Log.e("FILE","dfsfdsfsd   "+fileDescriptor.getFileDescriptor().toString());
         FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
         FileChannel fileChannel = inputStream.getChannel();
         long startOffset = fileDescriptor.getStartOffset();
         long declaredLength = fileDescriptor.getDeclaredLength();
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+    }
+
+    private boolean listAssetFiles(String path) {
+        String [] list;
+        try {
+            list = getAssets().list(path);
+            if (list.length > 0) {
+                // This is a folder
+                for (String file : list) {
+                    if (!listAssetFiles(path + "/" + file))
+                        return false;
+                    else {
+                        Log.e("FILE", file);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            return false;
+        }
+
+        return true;
     }
 }
